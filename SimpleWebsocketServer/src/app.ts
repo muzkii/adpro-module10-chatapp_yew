@@ -3,14 +3,14 @@ import WebSocket, { WebSocketServer } from 'ws';
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 interface User {
     ws: WebSocket;
-    nick: String;
+    nick: string;
     isAlive: boolean;
 }
 
 interface Message {
-    messageType: String;
-    data: String;
-    dataArray: String[];
+    messageType: string;
+    data: string;
+    dataArray: string[];
 }
 
 let users: User[] = [];
@@ -44,6 +44,28 @@ wss.on('connection', (ws: WebSocket) => {
                             })
                         );
                     }
+                    break;
+                case 'reaction':
+                    {
+                        const sender = users.find((u) => u.ws === ws);
+                        // parsed_data.data: JSON.stringify([messageIndex, emoji])
+                        const [messageIndex, emoji] = JSON.parse(parsed_data.data);
+                        broadcast(JSON.stringify({
+                            messageType: 'reaction',
+                            data: JSON.stringify({ messageIndex, emoji, from: sender?.nick }),
+                        }));
+                    }
+                    break;
+                case 'readReceipt':
+                    {
+                        const sender = users.find((u) => u.ws === ws);
+                        // parsed_data.data: messageIndex
+                        broadcast(JSON.stringify({
+                            messageType: 'readReceipt',
+                            data: JSON.stringify({ messageIndex: parsed_data.data, user: sender?.nick }),
+                        }));
+                    }
+                    break;
             }
         } catch (e) {
             console.log('Error in message', e);
